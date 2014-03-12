@@ -1,0 +1,114 @@
+#!/usr/bin/env sh
+# Store and sync GitHub issues as local Git refs
+#
+# Available commands: ${ALL_FUNCS}
+#
+# Usage: ${NAME} [<options>] command [<args>]
+#
+# Options:
+#   -h      Show this screen.
+#   -v      Show version.
+#   -r      Print your current daily GitHub API rate limit to stderr.
+#   -q      Quiet; don't print to stdout.
+#
+# Creates refs/issues/<remote>/<issue num> as Git refs. Each ref contains a
+# tree containing a JSON file for the issue and JSON files for each comment.
+# Changes to the issue and to any comments are stored as history on that ref.
+#
+# Requirements:
+#
+# * A POSIX environment (tested against Busybox v1.19.4)
+# * curl (tested against 7.32.0)
+# * jq <http://stedolan.github.io/jq/> (tested against 1.3)
+# * Git (tested against 1.8.5.3)
+#
+# Authentication credentials are read from a ~/.netrc file with the following
+# format. Generate the token on GitHub under Account Settings -> Applications.
+# Restrict permissions on that file with ``chmod 600 ~/.netrc``!
+#
+#   machine api.github.com
+#       login <username>
+#       password <token>
+
+export NAME=$(basename $0)
+export ALL_FUNCS=$(awk 'BEGIN {ORS=" "} !/^_/ && /^[a-zA-Z0-9_]+\s*\(\)/ {
+    sub(/\(\)$/, "", $1); print $1 }' $0 | sort)
+
+VERSION='0.1.0'
+
+_helptext() {
+    # Extract lines of contiguous comment characters as inline help text
+    #
+    # Indentation will be ignored. The first line of the match will be ignored
+    # (this is to ignore the she-bang of a file or the function name.
+    # Exits upon encountering the first blank line.
+    #
+    # Exported environment variables can be used for string interpolation in
+    # the extracted text.
+
+    # FIXME: gensub is not Posix (present in busybox & bsd but not solaris(?))
+    awk 'NR != 1 && /^\s*#/ { while(match($0,"[$]{[^}]*}")) {
+            var=substr($0,RSTART+2,RLENGTH -3)
+            gsub("[$]{"var"}",ENVIRON[var])
+            }; print gensub(/^\s*#\s?/, "", $0) }
+        !NF { exit }' "$@"
+}
+
+help() {
+    # Output the help text for a command
+    #
+    # Usage: ${NAME} help commandname
+
+    if [ $# -gt 0 ]; then
+        awk -v fname="^$1" '$0 ~ fname, /^}/ { print }' $0 | _helptext
+    else
+        _helptext $0
+    fi
+}
+
+_main() {
+    # Parse command line options and call the given command
+
+    local cmd opt OPTARG OPTIND
+    local quiet=0
+    local show_rate_limit=0
+
+    while getopts l:qrvh opt; do
+        case $opt in
+        q)  quiet=1;;
+        r)  show_rate_limit=1;;
+        v)  printf 'Version: %s\n' $VERSION
+            exit;;
+        h)  help
+            printf '\n'
+            exit;;
+        \?) help
+            exit 3;;
+        esac
+    done
+    shift $(($OPTIND - 1))
+
+    # FIXME: prevent from matching on partial words
+    if [ "${ALL_FUNCS#*$1}" == "$ALL_FUNCS" ]; then
+        if [ -z "$1" ] ; then
+            printf 'No command given\n\n'
+            help
+            exit 2
+        else
+            printf 'Command not found: %s\n\n' "$1"
+            help
+            exit 1
+        fi
+    fi
+
+    local cmd="${1}" && shift
+
+    # Run the command
+    if [ $quiet -eq 1 ]; then
+        { ${cmd} "$@"; } > /dev/null
+    else
+        ${cmd} "$@"
+    fi
+}
+
+_main "$@"

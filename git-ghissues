@@ -40,6 +40,124 @@ GH_URL=${GH_URL:-'https://api.github.com'}
 GH_HEADERS='Accept: application/vnd.github.beta+json'
 GH_RATE_LIMIT=0
 
+_commit() {
+    # Write a commit object to Git
+    #
+    # - (stdin)
+    #   The contents of the new object.
+    # filename
+    #   The filename to use in the tree.
+    # ref
+    #   Create or update this ref to point to the new object.
+    # date
+    #   A date to use for the author/committer date.
+    # author
+    #   The name to use as the author/committer name/email.
+    # uri
+    #   The URI the issue came from.
+    #   Stored to allow checking for updates.
+    # etag
+    #   The etag returned from fetching the URI.
+    #   Stored to allow conditional update checks.
+    # message
+    #   Commit message for the new object.
+    # parent
+    #   Optional parent object for the new commit.
+
+    local filename="${1}"
+    local ref="${2}"
+    local date="${3}"
+    local author="${4}"
+    local uri="${5}"
+    local etag="${6}"
+    local message="${8}"
+    local parent="${9}"
+    local obj tree commit
+
+    # These values are hard-coded so that a predictable SHA can be generated.
+    export GIT_AUTHOR_NAME="${author}"
+    export GIT_AUTHOR_EMAIL="${author}@example.com"
+    export GIT_AUTHOR_DATE="${date}"
+    export GIT_COMMITTER_NAME="${GIT_AUTHOR_NAME}"
+    export GIT_COMMITTER_EMAIL="${GIT_AUTHOR_EMAIL}"
+    export GIT_COMMITTER_DATE="${GIT_AUTHOR_DATE}"
+
+    obj=$(git hash-object -w --stdin)
+    tree=$(printf '100644 blob %s\t%s\n' "${obj}" "${filename}" | git mktree)
+    commit=$(git commit-tree "${tree}" ${parent:+-p ${parent}} \
+        -m "${message}")
+
+    git update-ref "${ref}" "${commit}"
+    git notes --ref issue add "${ref}" -m "${uri} ${etag}"
+}
+
+_process_issues() {
+    # Add, update, or ignore unchanged GitHub issues
+    #
+    # - (stdin)
+    #   GitHub issues as JSON objects, one per line.
+    # uri
+    #   The URI used to fetch the HTTP response.
+    # etag
+    #   The etag from the HTTP response.
+    #
+    # The HTTP response headers are written to a ref and each issue is written
+    # to a ref. Then a link is created for the issue ref to the HTTP response
+    # it came from so we can check GitHub for updates to an issue by resending
+    # the same HTTP request.
+
+    local uri="${1}"
+    local etag="${2}"
+    local line issue_no issue_date issue_user ref parent new_obj cur_obj
+
+    # Disable stderr for the duration of the loop below.
+    exec 3<&2 2>/dev/null
+
+    # Loop over each issue to deterime if it is a new issue, a new version of
+    # an existing issue, or an existing issue that has not been changed. (Since
+    # we're getting whole groups of issues at a time each one isn't necessarily
+    # a new version.)
+    while read -r line; do
+        printf '%s\n' "${line}" |\
+        jq -r '.["number"],.["created_at"],.["user"]["login"]' |\
+        xargs -n3 | while read -r issue_no issue_date issue_user; do
+            ref="refs/issue/${issue_no}"
+            parent=$(git rev-parse --verify "${ref}")
+
+            # Short-circuit if the ref exists and is the same as the new one.
+            if [ -n "${parent}" ]; then
+                new_obj=$(printf '%s\n' "${line}" | jq . |\
+                    git hash-object --stdin)
+                cur_obj=$(printf '%s\n' "${ref}:issue.json" |\
+                    git cat-file --batch-check='%(objectname)')
+
+                if [ "${new_obj}" == "${cur_obj}" ]; then
+                    printf 'Skipped issue %s\n' "${ref}"
+                    continue
+                fi
+            fi
+
+            # Create or update the issue to Git.
+            # Run the JSON back through jq so the file written to Git is pretty.
+            printf '%s\n' "${line}" | jq . |\
+                _commit "issue.json" \
+                    "${ref}" \
+                    "${issue_date}" \
+                    "${issue_user}" \
+                    "${uri}"\
+                    "${etag}"\
+                    "Issue #${issue_no}"\
+                    "${parent}"
+
+            [ -n "${parent}" ] && printf "Updated " || printf "Added "
+            printf 'issue %s\n' "${ref}"
+        done
+    done
+
+    # Restore stderr.
+    exec 2<&3 3>&-
+}
+
 _process_response() {
     # Process an HTTP reponse containing GitHub issues
     #

@@ -36,6 +36,116 @@ export ALL_FUNCS=$(awk 'BEGIN {ORS=" "} !/^_/ && /^[a-zA-Z0-9_]+\s*\(\)/ {
 
 VERSION='0.1.0'
 
+GH_URL=${GH_URL:-'https://api.github.com'}
+GH_HEADERS='Accept: application/vnd.github.beta+json'
+GH_RATE_LIMIT=0
+
+_process_response() {
+    # Process an HTTP reponse containing GitHub issues
+    #
+    # - (stdin)
+    #   The full HTTP response including headers.
+    # uri
+    #   The URI used to return this response.
+
+    local uri="${1}"
+    local status hdr val etag
+
+    read -r status
+    status="${status%}"
+    status="${status#HTTP* }"
+
+    # If the response is a 304 we already have the latest versions of the
+    # issues in this group stored.
+    case $status in
+        200*) : ;;
+        304*) echo '304'; return 42 ;;
+        *) echo 'bad'; return ${E_GITHUB_ERROR} ;;
+    esac
+
+    while IFS=": " read -r hdr val; do
+        # Headers stop at the first blank line.
+        # Why oh why do headers from GitHub have Windows line endings?
+        [ "$hdr" == "" ] && break
+        val="${val%}"
+
+        case "$hdr" in
+            ETag) etag="${val#\"}"; etag="${etag%\"}";;
+            X-RateLimit-Remaining) GH_RATE_LIMIT="$val";;
+        esac
+    done
+
+    # Reformat the issues as one issue per line so we can reason about them
+    # individually with regular shell tools.
+    jq -c '.[]' | _process_issues "${uri}" "${etag}"
+}
+
+_get_issue_urls() {
+    # Assemble a list of URLs for all available issues
+    #
+    # If the URL has been fetched previously, pair it with the saved etag.
+
+    local path="repositories/1390248/issues"
+    local qs="state=all&per_page=100&page=%s"
+    local uri="${GH_URL}/${path}?${qs}"
+    local headers t_links last_pg
+
+    # Make a small HEAD request so we can get the last page number.
+    headers=$(curl -nsSI -H "${GH_HEADERS}" "$(printf "${uri}" 1)")
+    t_links="${headers##*page=}"
+    last_pg="${t_links%>*}"
+
+    # Compile a list of all issue notes that point to an issue branch head.
+    # (We only care about notes for the latest issue versions.)
+    git show-ref | awk '
+    BEGIN {
+        # Map of previous HTTP responses to issue refs.
+        cmd = "git notes --ref issue"
+        while ((cmd | getline) > 0) responses[$2] = $1
+        close(cmd)
+    }
+
+    # Save ref if we have a stored HTTP response for it.
+    $2 ~ /refs\/issue/ {
+        if ($1 in responses) requests[responses[$1]] = 1
+    }
+
+    END {
+        for (i in requests) print i
+    }
+    ' | git cat-file --batch | awk -v last_pg=${last_pg} -v issues_url="${uri}" '
+    /^http/ {
+        urls[$1] = $2
+    }
+
+    END {
+        for (i = 1; i < last_pg; i += 1) {
+            url = sprintf(issues_url, i)
+            urls[url] = urls[url]
+        }
+
+        for (i in urls) print i, urls[i]
+    }
+    ' | sort -u -n -k1.80
+}
+
+sync() {
+    # Grab all issues from GitHub and write or update the local store
+    #
+    # HTTP requests are done conditionally. If we have a valid etag from the
+    # last fetch GitHub won't count that request against your rate limit.
+
+    local url etag
+
+    _get_issue_urls | while read -r url etag; do
+        if [ -n "${etag}" ]; then
+            etag="-H 'If-None-Match: ${etag}'"
+        fi
+
+        curl -nsSi "${etag}" -H "${GH_HEADERS}" "${url}" | _process_response
+    done
+}
+
 _helptext() {
     # Extract lines of contiguous comment characters as inline help text
     #

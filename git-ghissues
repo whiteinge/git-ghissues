@@ -44,6 +44,35 @@ export E_NO_COMMAND=1
 export E_INCORRECT_ARGS=2
 export E_COMMAND_NOT_FOUND=3
 export E_GITHUB_ERROR=4
+export E_REMOTE_NOT_GITHUB=5
+export E_REMOTE_NOT_FOUND=6
+
+_get_repository_info() {
+    # Grab information for the current repository from GitHub
+    #
+    # remote
+    #   The name of a remote. Defaults to the first listed remote.
+
+    local uri
+    local remote="${1:-$(git remote | head -1)}"
+
+    git remote show -n "${remote}" | awk '
+    /Fetch URL/ {
+        len = length($3)
+        url_idx = index($3, "@")
+        account_idx = index($3, ":")
+        repo_idx = index($3, "/")
+
+        url = substr($3, url_idx + 1, account_idx - url_idx - 1)
+        account = substr($3, account_idx + 1, repo_idx - account_idx - 1)
+        repo = substr($3, repo_idx + 1, length($3) - repo_idx - 4)
+
+        if (! url ~ /^github/) exit ENVIRON["E_REMOTE_NOT_GITHUB"]
+
+        print "url=" ENVIRON["GH_URL"] "/repos/" account "/" repo
+    }' | curl -nsSiK -
+
+}
 
 _commit() {
     # Write a commit object to Git

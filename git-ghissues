@@ -138,24 +138,24 @@ _process_issues() {
 
                 if [ "${new_obj}" == "${cur_obj}" ]; then
                     printf 'Skipped issue %s\n' "${ref}"
-                    continue
                 fi
+            else
+                # Create or update the issue to Git.
+                # Run the JSON back through jq so the file written to Git is pretty.
+                printf '%s\n' "${line}" | jq . |\
+                    _commit "issue.json" \
+                        "${ref}" \
+                        "${issue_date}" \
+                        "${issue_user}" \
+                        "${uri}"\
+                        "${etag}"\
+                        "Issue #${issue_no}"\
+                        "${parent}"
+
+                [ -n "${parent}" ] && printf "Updated " || printf "Added "
+                printf 'issue %s\n' "${ref}"
             fi
 
-            # Create or update the issue to Git.
-            # Run the JSON back through jq so the file written to Git is pretty.
-            printf '%s\n' "${line}" | jq . |\
-                _commit "issue.json" \
-                    "${ref}" \
-                    "${issue_date}" \
-                    "${issue_user}" \
-                    "${uri}"\
-                    "${etag}"\
-                    "Issue #${issue_no}"\
-                    "${parent}"
-
-            [ -n "${parent}" ] && printf "Updated " || printf "Added "
-            printf 'issue %s\n' "${ref}"
         done
     done
 

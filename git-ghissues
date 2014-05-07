@@ -236,7 +236,8 @@ _get_issue_urls() {
     END {
         for (i in requests) print i
     }
-    ' | git cat-file --batch | awk -v last_pg=${last_pg} -v issues_url="${uri}" '
+    ' | git cat-file --batch |\
+        awk -v last_pg=${last_pg} -v issues_url="${uri}" '
     /^http/ {
         urls[$1] = $2
     }

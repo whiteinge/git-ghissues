@@ -40,6 +40,11 @@ GH_URL=${GH_URL:-'https://api.github.com'}
 GH_HEADERS='Accept: application/vnd.github.beta+json'
 GH_RATE_LIMIT=0
 
+E_NO_COMMAND=1
+E_INCORRECT_ARGS=2
+E_COMMAND_NOT_FOUND=3
+E_GITHUB_ERROR=4
+
 _commit() {
     # Write a commit object to Git
     #

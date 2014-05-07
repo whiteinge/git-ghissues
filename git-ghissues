@@ -8,7 +8,7 @@
 # Options:
 #   -h      Show this screen.
 #   -v      Show version.
-#   -r      Print your current daily GitHub API rate limit to stderr.
+#   -r      Print your current GitHub API rate limit to stderr.
 #   -q      Quiet; don't print to stdout.
 #
 # Creates refs/issues/<remote>/<issue num> as Git refs. Each ref contains a

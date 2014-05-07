@@ -266,7 +266,8 @@ sync() {
             etag="-H 'If-None-Match: ${etag}'"
         fi
 
-        curl -nsSi "${etag}" -H "${GH_HEADERS}" "${url}" | _process_response
+        curl -nsSi "${etag}" -H "${GH_HEADERS}" "${url}" |\
+            _process_response "${url}"
     done
 }
 

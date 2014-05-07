@@ -343,6 +343,14 @@ _main() {
         ${cmd} "$@"
     fi
 
+    case $? in
+    0)      :
+            ;;
+    127)    help
+            exit $(( E_COMMAND_NOT_FOUND ));;
+    *)      exit $?;;
+    esac
+
     # Output the rate limit
     if [ $show_rate_limit -eq 1 ]; then
         printf 'Remaining GitHub requests: %s\n' "${GH_RATE_LIMIT:-'Unknown'}"

@@ -321,17 +321,10 @@ _main() {
     done
     shift $(($OPTIND - 1))
 
-    # FIXME: prevent from matching on partial words
-    if [ "${ALL_FUNCS#*$1}" == "$ALL_FUNCS" ]; then
-        if [ -z "$1" ] ; then
-            printf 'No command given\n\n'
-            help
-            exit 2
-        else
-            printf 'Command not found: %s\n\n' "$1"
-            help
-            exit 1
-        fi
+    if [ -z "$1" ] ; then
+        printf 'No command given\n\n'
+        help
+        exit ${E_NO_COMMAND}
     fi
 
     local cmd="${1}" && shift

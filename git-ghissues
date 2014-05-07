@@ -36,14 +36,14 @@ export ALL_FUNCS=$(awk 'BEGIN {ORS=" "} !/^_/ && /^[a-zA-Z0-9_]+\s*\(\)/ {
 
 VERSION='0.1.0'
 
-GH_URL=${GH_URL:-'https://api.github.com'}
+export GH_URL=${GH_URL:-'https://api.github.com'}
 GH_HEADERS='Accept: application/vnd.github.beta+json'
 GH_RATE_LIMIT=0
 
-E_NO_COMMAND=1
-E_INCORRECT_ARGS=2
-E_COMMAND_NOT_FOUND=3
-E_GITHUB_ERROR=4
+export E_NO_COMMAND=1
+export E_INCORRECT_ARGS=2
+export E_COMMAND_NOT_FOUND=3
+export E_GITHUB_ERROR=4
 
 _commit() {
     # Write a commit object to Git

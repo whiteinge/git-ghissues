@@ -56,6 +56,9 @@ _get_repo() {
     local uri
     local remote="${1:-$(git remote | head -1)}"
 
+    # FIXME: account for other URL styles (http, git, owned and not owned)
+    # git://github.com/user/repo.git
+
     git remote show -n "${remote}" | awk '
     /Fetch URL/ {
         len = length($3)

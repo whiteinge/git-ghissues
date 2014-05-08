@@ -311,6 +311,20 @@ list() {
         git cat-file --batch | awk '!/^[a-z0-9]+.*blob/ { print }' |\
         jq -r '.["number"],.["title"]' | sort -n
 }
+
+show() {
+    # Output an issue
+    #
+    # issue
+    #   An issue number to fetch and display.
+
+    local issue="${1}"
+
+    printf 'refs/issue/%s:issue.json' "${issue}" | git cat-file --batch |\
+        awk 'NR != 1 { print }' |\
+        jq -r '.["number"],.["title"],.["user"]["login"],.["state"],.["milestone"]["title"],.["labels"][]["name"],.["body"]'
+}
+
 _helptext() {
     # Extract lines of contiguous comment characters as inline help text
     #

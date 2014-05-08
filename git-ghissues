@@ -238,6 +238,9 @@ _process_response() {
 _get_issue_urls() {
     # Assemble a list of URLs for all available issues
     #
+    # remote
+    #   The name of the remote to sync with
+    #
     # If the URL has been fetched previously, pair it with the saved etag.
 
     # FIXME: why are the issue URLs in the <link> header different from the
@@ -245,7 +248,10 @@ _get_issue_urls() {
     # FIXME: wrap the following curl call in a check for a 200 response code.
     # FIXME: the links header is not returned if there is less than one page.
 
-    local uri="${GH_URL}/repos/$(_get_repo)/issues?state=all&per_page=100&page=%s"
+    local remote="${1}"
+    local path="repos/$(_get_repo "${remote}")/issues"
+    local qs='state=all&per_page=100&page=%s'
+    local uri="${GH_URL}/${path}?${qs}"
     local headers t_links last_pg
 
     # Make a small HEAD request so we can get the last page number.
@@ -291,12 +297,16 @@ _get_issue_urls() {
 sync() {
     # Grab all issues from GitHub and write or update the local store
     #
+    # remote
+    #   The name of the remote to sync with
+    #
     # HTTP requests are done conditionally. If we have a valid etag from the
     # last fetch GitHub won't count that request against your rate limit.
 
     local url etag
+    local remote="${1}"
 
-    _get_issue_urls | while read -r url etag; do
+    _get_issue_urls "${remote}" | while read -r url etag; do
         if [ -n "${etag}" ]; then
             etag="-H 'If-None-Match: ${etag}'"
         fi

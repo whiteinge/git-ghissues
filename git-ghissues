@@ -325,6 +325,15 @@ show() {
         jq -r '.["number"],.["title"],.["user"]["login"],.["state"],.["milestone"]["title"],.["labels"][]["name"],.["body"]'
 }
 
+open() {
+    # Output issues marked as open
+
+    git show-ref |\
+        awk -F/ '/refs\/issue/ { print "refs/issue/" $3 ":issue.json" }' |\
+        git cat-file --batch | awk '!/^[a-z0-9]+.*blob/ { print }' |\
+        jq -r 'select(.["state"] == "open") | .["number"]' | sort -n
+}
+
 _helptext() {
     # Extract lines of contiguous comment characters as inline help text
     #

@@ -47,8 +47,8 @@ export E_GITHUB_ERROR=4
 export E_REMOTE_NOT_GITHUB=5
 export E_REMOTE_NOT_FOUND=6
 
-_get_repository_info() {
-    # Grab information for the current repository from GitHub
+_get_repo() {
+    # Return the account name and the repo name based on a remote URL
     #
     # remote
     #   The name of a remote. Defaults to the first listed remote.
@@ -69,8 +69,8 @@ _get_repository_info() {
 
         if (! url ~ /^github/) exit ENVIRON["E_REMOTE_NOT_GITHUB"]
 
-        print "url=" ENVIRON["GH_URL"] "/repos/" account "/" repo
-    }' | curl -nsSiK -
+        print account "/" repo
+    }'
 
 }
 

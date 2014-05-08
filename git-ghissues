@@ -237,9 +237,12 @@ _get_issue_urls() {
     #
     # If the URL has been fetched previously, pair it with the saved etag.
 
-    local path="repositories/1390248/issues"
-    local qs="state=all&per_page=100&page=%s"
-    local uri="${GH_URL}/${path}?${qs}"
+    # FIXME: why are the issue URLs in the <link> header different from the
+    # issues URL in the developer docs?
+    # FIXME: wrap the following curl call in a check for a 200 response code.
+    # FIXME: the links header is not returned if there is less than one page.
+
+    local uri="${GH_URL}/repos/$(_get_repo)/issues?state=all&per_page=100&page=%s"
     local headers t_links last_pg
 
     # Make a small HEAD request so we can get the last page number.

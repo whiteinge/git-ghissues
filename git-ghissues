@@ -303,6 +303,14 @@ sync() {
     done
 }
 
+list() {
+    # List all issue numbers that have been stored locally
+
+    git show-ref |\
+        awk -F/ '/refs\/issue/ { print "refs/issue/" $3 ":issue.json" }' |\
+        git cat-file --batch | awk '!/^[a-z0-9]+.*blob/ { print }' |\
+        jq -r '.["number"],.["title"]' | sort -n
+}
 _helptext() {
     # Extract lines of contiguous comment characters as inline help text
     #

@@ -37,7 +37,7 @@ export ALL_FUNCS=$(awk 'BEGIN {ORS=" "} !/^_/ && /^[a-zA-Z0-9_]+\s*\(\)/ {
 VERSION='0.1.0'
 
 export GH_URL=${GH_URL:-'https://api.github.com'}
-GH_HEADERS='Accept: application/vnd.github.beta+json'
+GH_HEADERS='Accept: application/vnd.github.v3+json'
 GH_RATE_LIMIT=0
 
 export E_NO_COMMAND=1

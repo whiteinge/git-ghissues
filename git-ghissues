@@ -197,14 +197,20 @@ _process_issues() {
 }
 
 _process_response() {
-    # Process an HTTP reponse containing GitHub issues
+    # Process an HTTP reponse splitting headers from the body
     #
     # - (stdin)
     #   The full HTTP response including headers.
-    # uri
-    #   The URI used to return this response.
+    #
+    # Returns the HTTP headers as tab-delimited key -> val pairs followed by
+    # the untouched HTTP body. Desired headers are passed as positional
+    # arguments. If no positional arguments are passed then no headers are
+    # output.
+    #
+    # Some headers are reformatted into forms easier to process with shell
+    # tools. If the server response is not 200 then no processing is done and
+    # nothing is returned.
 
-    local uri="${1}"
     local status hdr val etag
 
     read -r status
@@ -215,8 +221,7 @@ _process_response() {
     # issues in this group stored.
     case $status in
         200*) : ;;
-        304*) echo '304'; return 42 ;;
-        *) echo 'bad'; return ${E_GITHUB_ERROR} ;;
+        *) printf '%s\n' "${status}" 1>&2; return ${E_GITHUB_ERROR};;
     esac
 
     while IFS=": " read -r hdr val; do
@@ -225,15 +230,34 @@ _process_response() {
         [ "$hdr" == "" ] && break
         val="${val%}"
 
+        # Process or format certain headers so they're easier to work with.
         case "$hdr" in
-            ETag) etag="${val#\"}"; etag="${etag%\"}";;
+            # Remote quotes from the etag header.
+            ETag) val="${val#\"}"; val="${val%\"}";;
+
+            # Output last page number only.
+            Link) val="${val##*page=}"; val="${val%>*}";;
+
+            # Update the GitHub rate limit counter.
             X-RateLimit-Remaining) GH_RATE_LIMIT="$val";;
+        esac
+
+        case "$hdr" in
+            # Output the requested headers.
+            $1) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $2) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $3) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $4) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $5) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $6) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $7) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $8) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $9) printf '%s\t%s\n' "${hdr}" "${val}";;
         esac
     done
 
-    # Reformat the issues as one issue per line so we can reason about them
-    # individually with regular shell tools.
-    jq -c '.[]' | _process_issues "${uri}" "${etag}"
+    # Output the response body.
+    cat
 }
 
 _get_issue_urls() {

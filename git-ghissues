@@ -8,6 +8,7 @@
 # Options:
 #   -h      Show this screen.
 #   -v      Show version.
+#   -d      Enable xtrace debug logging.
 #   -r      Print your current GitHub API rate limit to stderr.
 #   -q      Quiet; don't print to stdout.
 #
@@ -382,12 +383,13 @@ _main() {
     local quiet=0
     local show_rate_limit=0
 
-    while getopts l:qrvh opt; do
+    while getopts l:qrvdh opt; do
         case $opt in
         q)  quiet=1;;
         r)  show_rate_limit=1;;
         v)  printf 'Version: %s\n' $VERSION
             exit;;
+        d)  set -x;;
         h)  help
             printf '\n'
             exit;;

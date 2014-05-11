@@ -40,12 +40,12 @@ export GH_URL=${GH_URL:-'https://api.github.com'}
 GH_HEADERS='Accept: application/vnd.github.v3+json'
 GH_RATE_LIMIT=0
 
-export E_NO_COMMAND=1
-export E_INCORRECT_ARGS=2
-export E_COMMAND_NOT_FOUND=3
-export E_GITHUB_ERROR=4
-export E_REMOTE_NOT_GITHUB=5
-export E_REMOTE_NOT_FOUND=6
+export E_NO_COMMAND=41
+export E_INCORRECT_ARGS=42
+export E_COMMAND_NOT_FOUND=43
+export E_GITHUB_ERROR=44
+export E_REMOTE_NOT_GITHUB=45
+export E_REMOTE_NOT_FOUND=46
 
 _get_repo() {
     # Return the account name and the repo name based on a remote URL

@@ -266,7 +266,9 @@ _get_issue_urls() {
     # remote
     #   The name of the remote to sync with
     #
-    # If the URL has been fetched previously, pair it with the saved etag.
+    # Makes an HTTP call to fetch the Link header to determine the total number
+    # of issue pages then extrapolates that into a list of URLs. If the URL has
+    # been fetched previously, pair it with the saved etag.
 
     # FIXME: wrap the following curl call in a check for a 200 response code.
     # FIXME: the links header is not returned if there is less than one page.
@@ -277,10 +279,13 @@ _get_issue_urls() {
     local uri="${GH_URL}/${path}?${qs}"
     local headers t_links last_pg
 
-    # Make a small HEAD request so we can get the last page number.
-    headers=$(curl -nsSI -H "${GH_HEADERS}" "$(printf "${uri}" 1)")
-    t_links="${headers##*page=}"
-    last_pg="${t_links%>*}"
+    # Make a HEAD request so we can get the last page number.
+    last_pg=$(curl -nsSI -H "${GH_HEADERS}" "$(printf "${uri}")" |\
+        _process_response 'Link')
+
+    [ $? -ne 0 ] && return $?
+    last_pg="${last_pg#Link	*}"
+    last_pg="${last_pg:=1}"
 
     # Compile a list of all issue notes that point to an issue branch head.
     # (We only care about notes for the latest issue versions.)

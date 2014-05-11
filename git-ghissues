@@ -243,8 +243,6 @@ _get_issue_urls() {
     #
     # If the URL has been fetched previously, pair it with the saved etag.
 
-    # FIXME: why are the issue URLs in the <link> header different from the
-    # issues URL in the developer docs?
     # FIXME: wrap the following curl call in a check for a 200 response code.
     # FIXME: the links header is not returned if there is less than one page.
 

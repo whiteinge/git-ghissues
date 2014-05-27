@@ -12,6 +12,13 @@ refs in the local Git database. Updates to issues are stored as Git history.
 This allows offline access to GitHub issues as well as searching, listing, and
 mining project issues using all your favorite Git commands.
 
+Status
+======
+
+Watch the `0.1.0
+<https://github.com/whiteinge/git-ghissues/issues?milestone=2&state=open>`_
+Milestone for the first public release.
+
 Installation
 ============
 

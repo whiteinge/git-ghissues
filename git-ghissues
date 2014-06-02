@@ -332,16 +332,23 @@ sync() {
     # HTTP requests are done conditionally. If we have a valid etag from the
     # last fetch GitHub won't count that request against your rate limit.
 
-    local url etag
-    local remote="${1}"
+    local uri req_etag resp_etag
+    local repo=$(_get_repo "$1")
+    local issues_uri=$(printf ${GH_ISSUES} "${GH_URL}" "${repo}" "issues")
+    local comments_uri=$(printf ${GH_ISSUES} "${GH_URL}" "${repo}" "issues/comments")
 
-    _get_issue_urls "${remote}" | while read -r url etag; do
-        if [ -n "${etag}" ]; then
-            etag="-H 'If-None-Match: ${etag}'"
+    _get_issues_urls "${issues_uri}" | while read -r uri req_etag ; do
+        if [ -n "${req_etag}" ]; then
+            req_etag="-H 'If-None-Match: ${req_etag}'"
         fi
 
-        curl -nsSi "${etag}" -H "${GH_HEADERS}" "${url}" |\
-            _process_response "${url}"
+        curl -nsSi ${req_etag} -H "${GH_HEADERS}" "${uri}" \
+            | _process_response 'ETag' \
+            | while read -r resp_etag ; do
+                # Reformat the issues as one issue per line so we can reason about them
+                # individually with regular shell tools.
+                jq -c '.[]' | _process_issues "${uri}" "${resp_etag}"
+            done
     done
 }
 

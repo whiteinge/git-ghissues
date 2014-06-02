@@ -39,6 +39,7 @@ VERSION='0.1.0'
 
 GH_URL=${GH_URL:-'https://api.github.com'}
 GH_HEADERS='Accept: application/vnd.github.v3+json'
+GH_ISSUES='%s/repos/%s/%s?state=all&per_page=100&page=%%s'
 GH_RATE_LIMIT=0
 
 export E_NO_COMMAND=41

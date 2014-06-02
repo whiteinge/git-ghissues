@@ -294,7 +294,7 @@ _get_issue_urls() {
         | awk -v last_pg="${last_pg}" -v issues_uri="${uri}" '
             NF { urls[$1] = $2 }
             END {
-                for (i = 1; i < last_pg; i += 1) {
+                for (i = 1; i <= last_pg; i += 1) {
                     url = sprintf(issues_uri, i)
                     urls[url] = urls[url]
                 }

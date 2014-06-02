@@ -304,10 +304,11 @@ _get_all_urls() {
 _get_issues_urls() {
     # Return all issues URLs & last known etag
     #
-    # uri
-    #   A URI in printf format to generate the paginated issues URLs.
+    # remote
+    #   The name of the remote to sync with
 
-    local uri="${1}"
+    local repo=$(_get_repo "$1")
+    local uri=$(printf ${GH_ISSUES} "${GH_URL}" "${repo}" "issues")
 
     git notes --ref issues list | _get_all_urls "${uri}"
 }
@@ -315,10 +316,11 @@ _get_issues_urls() {
 _get_comments_urls() {
     # Returns all comment URLs & last known etag
     #
-    # uri
-    #   A URI in printf format to generate the paginated comments URLs.
+    # remote
+    #   The name of the remote to sync with
 
-    local uri="${1}"
+    local repo=$(_get_repo "$1")
+    local uri=$(printf ${GH_ISSUES} "${GH_URL}" "${repo}" "issues/comments")
 
     git notes --ref comments list | _get_all_urls "${uri}"
 }
@@ -333,11 +335,9 @@ sync() {
     # last fetch GitHub won't count that request against your rate limit.
 
     local uri req_etag resp_etag
-    local repo=$(_get_repo "$1")
-    local issues_uri=$(printf ${GH_ISSUES} "${GH_URL}" "${repo}" "issues")
-    local comments_uri=$(printf ${GH_ISSUES} "${GH_URL}" "${repo}" "issues/comments")
+    local remote="$1"
 
-    _get_issues_urls "${issues_uri}" | while read -r uri req_etag ; do
+    _get_issues_urls "${remote}" | while read -r uri req_etag ; do
         if [ -n "${req_etag}" ]; then
             req_etag="-H 'If-None-Match: ${req_etag}'"
         fi

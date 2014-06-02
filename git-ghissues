@@ -245,15 +245,15 @@ _process_response() {
 
         case "$hdr" in
             # Output the requested headers.
-            $1) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $2) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $3) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $4) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $5) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $6) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $7) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $8) printf '%s\t%s\n' "${hdr}" "${val}";;
-            $9) printf '%s\t%s\n' "${hdr}" "${val}";;
+            $1) printf '%s\n' "${val}";;
+            $2) printf '%s\n' "${val}";;
+            $3) printf '%s\n' "${val}";;
+            $4) printf '%s\n' "${val}";;
+            $5) printf '%s\n' "${val}";;
+            $6) printf '%s\n' "${val}";;
+            $7) printf '%s\n' "${val}";;
+            $8) printf '%s\n' "${val}";;
+            $9) printf '%s\n' "${val}";;
         esac
     done
 

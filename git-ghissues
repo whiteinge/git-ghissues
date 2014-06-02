@@ -271,7 +271,6 @@ _get_issue_urls() {
     # been fetched previously, pair it with the saved etag.
 
     # FIXME: wrap the following curl call in a check for a 200 response code.
-    # FIXME: the links header is not returned if there is less than one page.
 
     local remote="${1}"
     local path="repos/$(_get_repo "${remote}")/issues"
@@ -280,46 +279,29 @@ _get_issue_urls() {
     local headers t_links last_pg
 
     # Make a HEAD request so we can get the last page number.
-    last_pg=$(curl -nsSI -H "${GH_HEADERS}" "$(printf "${uri}")" |\
-        _process_response 'Link')
+    last_pg=$(curl -nsSI -H "${GH_HEADERS}" "$(printf "${uri}")" \
+        | _process_response 'Link')
 
     [ $? -ne 0 ] && return $?
     last_pg="${last_pg#Link	*}"
     last_pg="${last_pg:=1}"
 
-    # Compile a list of all issue notes that point to an issue branch head.
-    # (We only care about notes for the latest issue versions.)
-    git show-ref | awk '
-    BEGIN {
-        # Map of previous HTTP responses to issue refs.
-        cmd = "git notes --ref issue"
-        while ((cmd | getline) > 0) responses[$2] = $1
-        close(cmd)
-    }
+    # Get all the URLs we've already processed and extrapolate any missing URLs
+    # using the last page from the Links header. Output a list of all URLs for
+    # this repo plus the etag from the last fetch if we have one.
+    git notes --ref issue list | awk '{ print $1 }' \
+        | git cat-file --batch='%(rest)'\
+        | awk -v last_pg="${last_pg}" -v issues_uri="${uri}" '
+            NF { urls[$1] = $2 }
+            END {
+                for (i = 1; i < last_pg; i += 1) {
+                    url = sprintf(issues_uri, i)
+                    urls[url] = urls[url]
+                }
 
-    # Save ref if we have a stored HTTP response for it.
-    $2 ~ /refs\/issue/ {
-        if ($1 in responses) requests[responses[$1]] = 1
-    }
-
-    END {
-        for (i in requests) print i
-    }
-    ' | git cat-file --batch |\
-        awk -v last_pg="${last_pg}" -v issues_url="${uri}" '
-    /^http/ {
-        urls[$1] = $2
-    }
-
-    END {
-        for (i = 1; i < last_pg; i += 1) {
-            url = sprintf(issues_url, i)
-            urls[url] = urls[url]
-        }
-
-        for (i in urls) print i, urls[i]
-    }
-    ' | sort -u -n -k1.80
+                for (i in urls) print i, urls[i]
+            }' \
+        | sort -n -k1.80
 }
 
 sync() {

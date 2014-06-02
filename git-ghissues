@@ -260,25 +260,23 @@ _process_response() {
     cat
 }
 
-_get_issue_urls() {
-    # Assemble a list of URLs for all available issues
+_get_all_urls() {
+    # Assemble a list of URLs for all available issues or comments
     #
-    # remote
-    #   The name of the remote to sync with
+    # - (stdin)
+    #   The output from ``git notes --ref <foo> list``
+    # uri
+    #   A URL pattern with the page number in printf format
     #
     # Makes an HTTP call to fetch the Link header to determine the total number
-    # of issue pages then extrapolates that into a list of URLs. If the URL has
-    # been fetched previously, pair it with the saved etag.
+    # of pages then extrapolates that into a list of URLs. If the URL has been
+    # fetched previously, pair it with the saved etag.
 
-    # FIXME: wrap the following curl call in a check for a 200 response code.
-
-    local remote="${1}"
-    local path="repos/$(_get_repo "${remote}")/issues"
-    local qs='state=all&per_page=100&page=%s'
-    local uri="${GH_URL}/${path}?${qs}"
-    local headers t_links last_pg
+    local uri="${1}"
+    local last_pg
 
     # Make a HEAD request so we can get the last page number.
+    # FIXME: Check for a 200 response code.
     last_pg=$(curl -nsSI -H "${GH_HEADERS}" "$(printf "${uri}")" \
         | _process_response 'Link')
 
@@ -286,10 +284,8 @@ _get_issue_urls() {
     last_pg="${last_pg#Link	*}"
     last_pg="${last_pg:=1}"
 
-    # Get all the URLs we've already processed and extrapolate any missing URLs
-    # using the last page from the Links header. Output a list of all URLs for
-    # this repo plus the etag from the last fetch if we have one.
-    git notes --ref issue list | awk '{ print $1 }' \
+    # Get all URLs already processed and extrapolate any missing URLs.
+    awk '{ print $1 }' \
         | git cat-file --batch='%(rest)'\
         | awk -v last_pg="${last_pg}" -v issues_uri="${uri}" '
             NF { urls[$1] = $2 }

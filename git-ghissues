@@ -126,7 +126,7 @@ _commit() {
         -m "${message}")
 
     git update-ref "${ref}" "${commit}"
-    git notes --ref issue add "${ref}" -m "${uri} ${etag}"
+    git notes --ref issues add "${ref}" -m "${uri} ${etag}"
 }
 
 _process_issues() {

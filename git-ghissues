@@ -348,8 +348,8 @@ sync() {
         eval "${curl_cmd}" \
             | _process_response 'ETag' \
             | while read -r resp_etag ; do
-                # Reformat the issues as one issue per line so we can reason about them
-                # individually with regular shell tools.
+                # Reformat the issues as one issue per line so we can reason
+                # about them individually with regular shell tools.
                 jq -c '.[]' | _process_issues "${uri}" "${resp_etag}"
             done
     done

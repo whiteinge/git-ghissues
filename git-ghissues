@@ -301,6 +301,28 @@ _get_all_urls() {
         | sort -n -k1.80
 }
 
+_get_issues_urls() {
+    # Return all issues URLs & last known etag
+    #
+    # uri
+    #   A URI in printf format to generate the paginated issues URLs.
+
+    local uri="${1}"
+
+    git notes --ref issues list | _get_all_urls "${uri}"
+}
+
+_get_comments_urls() {
+    # Returns all comment URLs & last known etag
+    #
+    # uri
+    #   A URI in printf format to generate the paginated comments URLs.
+
+    local uri="${1}"
+
+    git notes --ref comments list | _get_all_urls "${uri}"
+}
+
 sync() {
     # Grab all issues from GitHub and write or update the local store
     #

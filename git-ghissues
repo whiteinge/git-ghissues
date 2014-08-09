@@ -313,6 +313,25 @@ _get_issues_urls() {
     git notes --ref issues list | _get_all_urls "${uri}"
 }
 
+_get_issue_refspec() {
+    # Format a refspec for the issue.json file for each SHA
+    #
+    # - (stdin) one SHA per line
+
+    while read -r sha; do
+        printf '%s:issue.json\n' "$sha"
+    done
+}
+
+_get_issue_json() {
+    # Retrieve the contents of refspec
+    #
+    # - (stdin) one refspec per line
+
+    _get_issue_refspec \
+        | git cat-file --batch='%(rest)'
+}
+
 _get_comments_urls() {
     # Returns all comment URLs & last known etag
     #
@@ -353,25 +372,6 @@ sync() {
                 jq -c '.[]' | _process_issues "${uri}" "${resp_etag}"
             done
     done
-}
-
-_get_issue_refspec() {
-    # Format a refspec for the issue.json file for each SHA
-    #
-    # - (stdin) one SHA per line
-
-    while read -r sha; do
-        printf '%s:issue.json\n' "$sha"
-    done
-}
-
-_get_issue_json() {
-    # Retrieve the contents of refspec
-    #
-    # - (stdin) one refspec per line
-
-    _get_issue_refspec \
-        | git cat-file --batch='%(rest)'
 }
 
 list() {

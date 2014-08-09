@@ -355,6 +355,15 @@ sync() {
     done
 }
 
+_get_issue_json() {
+    # Retrieve the contents of an issue.json file
+    #
+    # - (stdin) one SHA per line
+
+    awk '{ printf("%s:issue.json\n", $0) }' \
+        | git cat-file --batch='%(rest)'
+}
+
 list() {
     # List all issue numbers that have been stored locally
 

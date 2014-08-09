@@ -111,6 +111,8 @@ _commit() {
     local etag="${6}"
     local message="${8}"
     local parent="${9}"
+
+    local type="${filename%.*}"
     local obj tree commit
 
     # These values are hard-coded so that a predictable SHA can be generated.
@@ -127,7 +129,7 @@ _commit() {
         -m "${message}")
 
     git update-ref "${ref}" "${commit}"
-    git notes --ref issues add "${ref}" -m "${uri} ${etag}"
+    git notes --ref "${type}" add "${ref}" -m "${uri} ${etag}"
 }
 
 _process_issues() {

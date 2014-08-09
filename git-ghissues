@@ -367,10 +367,12 @@ _get_issue_json() {
 list() {
     # List all issue numbers that have been stored locally
 
-    git show-ref |\
-        awk -F/ '/refs\/issue/ { print "refs/issue/" $3 ":issue.json" }' |\
-        git cat-file --batch | awk '!/^[a-z0-9]+.*blob/ { print }' |\
-        jq -r '.["number"],.["title"]' | sort -n
+    git notes --ref issue list \
+        | awk '{ print $2 }' \
+        | _get_issue_json \
+        | jq -r '.["number"],.["title"]' \
+        | awk 'NR % 2 != 0 { printf($0) } NR % 2 == 0 { print " " $0 }' \
+        | sort -rn
 }
 
 show() {
@@ -380,19 +382,21 @@ show() {
     #   An issue number to fetch and display.
 
     local issue="${1}"
+    local sha="$(git rev-parse refs/issues/${issue})"
 
-    printf 'refs/issue/%s:issue.json' "${issue}" | git cat-file --batch |\
-        awk 'NR != 1 { print }' |\
-        jq -r '.["number"],.["title"],.["user"]["login"],.["state"],.["milestone"]["title"],.["labels"][]["name"],.["body"]'
+    printf '%s\n' "$sha" \
+        | _get_issue_json \
+        | jq -r '.["number"],.["title"],.["user"]["login"],.["state"],.["milestone"]["title"],.["labels"][]["name"],.["body"]'
 }
 
 open() {
     # Output issues marked as open
 
-    git show-ref |\
-        awk -F/ '/refs\/issue/ { print "refs/issue/" $3 ":issue.json" }' |\
-        git cat-file --batch | awk '!/^[a-z0-9]+.*blob/ { print }' |\
-        jq -r 'select(.["state"] == "open") | .["number"]' | sort -n
+    git notes --ref issue list \
+        | awk '{ print $2 }' \
+        | _get_issue_json \
+        | jq -r 'select(.["state"] == "open") | .["number"]' \
+        | sort -n
 }
 
 _helptext() {

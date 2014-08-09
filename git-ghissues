@@ -355,12 +355,22 @@ sync() {
     done
 }
 
-_get_issue_json() {
-    # Retrieve the contents of an issue.json file
+_get_issue_refspec() {
+    # Format a refspec for the issue.json file for each SHA
     #
     # - (stdin) one SHA per line
 
-    awk '{ printf("%s:issue.json\n", $0) }' \
+    while read -r sha; do
+        printf '%s:issue.json\n' "$sha"
+    done
+}
+
+_get_issue_json() {
+    # Retrieve the contents of refspec
+    #
+    # - (stdin) one refspec per line
+
+    _get_issue_refspec \
         | git cat-file --batch='%(rest)'
 }
 
